@@ -32,7 +32,6 @@ class _TodoItemState extends State<TodoItem> {
     if (!checked) return null;
     return const TextStyle(
       color: Colors.black45,
-      decoration: TextDecoration.lineThrough,
     );
   }
 
