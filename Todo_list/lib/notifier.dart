@@ -1,30 +1,38 @@
 import 'package:flutter/widgets.dart';
 import 'model.dart';
 
-class TodoListNotifier with ChangeNotifier {
-  final _todos = <Todo>[];
+class TodoBoardNotifier with ChangeNotifier {
+  final List<TodoCard> _cards = [];
 
-  int get length => _todos.length;
+  List<TodoCard> get cards => _cards;
 
-  void addTodo(String name) {
-    _todos.add(Todo(name: name, checked: false));
+  void addCard() {
+    _cards.add(TodoCard(lines: [TodoLine(text: "Nuova riga")]));
     notifyListeners();
   }
 
-  void changeTodo(Todo todo) {
-    todo.checked = !todo.checked;
+  void addLine(TodoCard card) {
+    card.lines.add(TodoLine(text: "Nuova riga"));
     notifyListeners();
   }
 
-  void deleteTodo(Todo todo) {
-    _todos.remove(todo);
+  void updateLine(TodoLine line, String newText) {
+    line.text = newText;
     notifyListeners();
   }
 
-  void updateTodo(Todo todo, String newName) {
-    todo.name = newName;
+  void toggleLine(TodoLine line) {
+    line.checked = !line.checked;
     notifyListeners();
   }
 
-  Todo getTodo(int i) => _todos[i];
+  void deleteLine(TodoCard card, TodoLine line) {
+    card.lines.remove(line);
+    notifyListeners();
+  }
+
+  void deleteCard(TodoCard card) {
+    _cards.remove(card);
+    notifyListeners();
+  }
 }

@@ -3,85 +3,43 @@ import 'package:provider/provider.dart';
 import 'model.dart';
 import 'notifier.dart';
 
-class TodoItem extends StatefulWidget {
-  const TodoItem({required this.todo, super.key});
-
-  final Todo todo;
-
-  @override
-  State<TodoItem> createState() => _TodoItemState();
-}
-
-class _TodoItemState extends State<TodoItem> {
-  bool _isEditing = false;
-  late TextEditingController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(text: widget.todo.name);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  TextStyle? _getTextStyle(bool checked) {
-    if (!checked) return null;
-    return const TextStyle(
-      color: Colors.black45,
-    );
-  }
+class TodoCardWidget extends StatelessWidget {
+  final TodoCard card;
+  const TodoCardWidget({super.key, required this.card});
 
   @override
   Widget build(BuildContext context) {
-    final notifier = context.watch<TodoListNotifier>();
+    final notifier = context.read<TodoBoardNotifier>();
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      elevation: 3,
+      margin: const EdgeInsets.all(8),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Row(
+        padding: const EdgeInsets.all(8),
+        child: Column(
           children: [
-            Checkbox(
-              value: widget.todo.checked,
-              onChanged: (_) {
-                notifier.changeTodo(widget.todo);
-              },
-            ),
-            Expanded(
-              child: _isEditing
-                  ? TextField(
-                      controller: _controller,
-                      autofocus: true,
-                      onSubmitted: (value) {
-                        notifier.updateTodo(widget.todo, value);
-                        setState(() {
-                          _isEditing = false;
-                        });
-                      },
-                    )
-                  : GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _isEditing = true;
-                        });
-                      },
-                      child: Text(
-                        widget.todo.name,
-                        style: _getTextStyle(widget.todo.checked),
+            ...card.lines.map((line) => Row(
+                  children: [
+                    Checkbox(
+                        value: line.checked,
+                        onChanged: (_) => notifier.toggleLine(line)),
+                    Expanded(
+                      child: TextField(
+                        controller: TextEditingController(text: line.text),
+                        onSubmitted: (value) =>
+                            notifier.updateLine(line, value),
                       ),
                     ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.delete),
-              onPressed: () {
-                notifier.deleteTodo(widget.todo);
-              },
-            ),
+                    IconButton(
+                        onPressed: () => notifier.deleteLine(card, line),
+                        icon: Icon(Icons.delete)),
+                  ],
+                )),
+            Align(
+              alignment: Alignment.centerRight,
+              child: IconButton(
+                  onPressed: () => notifier.addLine(card),
+                  icon: Icon(Icons.add)),
+            )
           ],
         ),
       ),
