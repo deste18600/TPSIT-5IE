@@ -13,7 +13,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Inferior Mind',
-      theme: ThemeData.dark().copyWith(useMaterial3: true),
+      theme: ThemeData.dark().copyWith(),
       home: const MyHomePage(title: 'Inferior Mind'),//guarda cosè
       debugShowCheckedModeBanner: false,
     );

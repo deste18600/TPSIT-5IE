@@ -6,6 +6,8 @@ void main() {
 }
 
 class ChatApp extends StatelessWidget {
+  const ChatApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -16,6 +18,8 @@ class ChatApp extends StatelessWidget {
 }
 
 class ChatScreen extends StatefulWidget {
+  const ChatScreen({super.key});
+
   @override
   State<ChatScreen> createState() => ChatScreenState();
 }
@@ -54,7 +58,7 @@ class ChatScreenState extends State<ChatScreen> {
       return;
     }
 
-    socket!.write(username + '\n');
+    socket!.write('$username\n');
     myUsername = username;
 
     setState(() {
@@ -91,7 +95,7 @@ class ChatScreenState extends State<ChatScreen> {
     String text = messageController.text.trim();
     if (text.isEmpty || !connected || socket == null) return;
 
-    socket!.write(text + '\n');
+    socket!.write('$text\n');
     messageController.clear();
   }
 
@@ -104,29 +108,29 @@ class ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Chat Mobile')),
+      appBar: AppBar(title: const Text('Chat Mobile')),
       body: Padding(
-        padding: EdgeInsets.all(12),
+        padding: const EdgeInsets.all(12),
         child: Column(
           children: [
             if (!connected) ...[
               TextField(
                 controller: ipController,
-                decoration: InputDecoration(labelText: 'IP Server'),
+                decoration: const InputDecoration(labelText: 'IP Server'),
               ),
               TextField(
                 controller: portController,
-                decoration: InputDecoration(labelText: 'Porta'),
+                decoration: const InputDecoration(labelText: 'Porta'),
                 keyboardType: TextInputType.number,
               ),
               TextField(
                 controller: usernameController,
-                decoration: InputDecoration(labelText: 'Username'),
+                decoration: const InputDecoration(labelText: 'Username'),
               ),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               ElevatedButton(
                 onPressed: connect,
-                child: Text('Connetti'),
+                child: const Text('Connetti'),
               ),
             ],
             if (connected)
@@ -145,8 +149,8 @@ class ChatScreenState extends State<ChatScreen> {
                                 ? Alignment.centerRight
                                 : Alignment.centerLeft,
                             child: Container(
-                              padding: EdgeInsets.all(8),
-                              margin: EdgeInsets.symmetric(vertical: 2),
+                              padding: const EdgeInsets.all(8),
+                              margin: const EdgeInsets.symmetric(vertical: 2),
                               color:
                                   isMe ? Colors.blue[200] : Colors.green[200],
                               child: Text(msg),
@@ -164,7 +168,7 @@ class ChatScreenState extends State<ChatScreen> {
                           ),
                         ),
                         IconButton(
-                          icon: Icon(Icons.send),
+                          icon: const Icon(Icons.send),
                           onPressed: sendMessage,
                         ),
                       ],

@@ -45,7 +45,7 @@
     },
     {
       "name": "flutter",
-      "rootUri": "file:///C:/Users/simon/Downloads/sdk%20flutterdart/flutter/packages/flutter",
+      "rootUri": "file:///C:/Users/simon/flutter/packages/flutter",
       "packageUri": "lib/",
       "languageVersion": "3.8"
     },
@@ -57,7 +57,7 @@
     },
     {
       "name": "flutter_test",
-      "rootUri": "file:///C:/Users/simon/Downloads/sdk%20flutterdart/flutter/packages/flutter_test",
+      "rootUri": "file:///C:/Users/simon/flutter/packages/flutter_test",
       "packageUri": "lib/",
       "languageVersion": "3.8"
     },
@@ -99,9 +99,9 @@
     },
     {
       "name": "meta",
-      "rootUri": "file:///C:/Users/simon/AppData/Local/Pub/Cache/hosted/pub.dev/meta-1.16.0",
+      "rootUri": "file:///C:/Users/simon/AppData/Local/Pub/Cache/hosted/pub.dev/meta-1.17.0",
       "packageUri": "lib/",
-      "languageVersion": "2.12"
+      "languageVersion": "3.5"
     },
     {
       "name": "path",
@@ -111,7 +111,7 @@
     },
     {
       "name": "sky_engine",
-      "rootUri": "file:///C:/Users/simon/Downloads/sdk%20flutterdart/flutter/bin/cache/pkg/sky_engine",
+      "rootUri": "file:///C:/Users/simon/flutter/bin/cache/pkg/sky_engine",
       "packageUri": "lib/",
       "languageVersion": "3.8"
     },
@@ -147,7 +147,7 @@
     },
     {
       "name": "test_api",
-      "rootUri": "file:///C:/Users/simon/AppData/Local/Pub/Cache/hosted/pub.dev/test_api-0.7.6",
+      "rootUri": "file:///C:/Users/simon/AppData/Local/Pub/Cache/hosted/pub.dev/test_api-0.7.7",
       "packageUri": "lib/",
       "languageVersion": "3.5"
     },
@@ -171,8 +171,8 @@
     }
   ],
   "generator": "pub",
-  "generatorVersion": "3.9.2",
-  "flutterRoot": "file:///C:/Users/simon/Downloads/sdk%20flutterdart/flutter",
-  "flutterVersion": "3.35.7",
+  "generatorVersion": "3.10.7",
+  "flutterRoot": "file:///C:/Users/simon/flutter",
+  "flutterVersion": "3.38.8",
   "pubCache": "file:///C:/Users/simon/AppData/Local/Pub/Cache"
 }
