@@ -34,7 +34,7 @@ class TodoBoardPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Todo Board"),
+        title: const Text("zKeep"),
         elevation: 4,
       ),
       body: ListView(
