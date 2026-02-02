@@ -4,7 +4,6 @@ import 'notifier.dart';
 import 'widgets.dart';
 
 void main() async {
-  // Necessario per inizializzare il database prima di runApp
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
@@ -17,71 +16,52 @@ class MyApp extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (_) => TodoBoardNotifier(),
       child: MaterialApp(
+        title: 'zKeep Pro',
         debugShowCheckedModeBanner: false,
-        theme: ThemeData(colorSchemeSeed: Colors.red, useMaterial3: true),
-        home: const TodoListPage(),
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.red),
+          useMaterial3: true,
+        ),
+        home: const TodoBoardPage(),
       ),
     );
   }
 }
 
-class TodoListPage extends StatefulWidget {
-  const TodoListPage({super.key});
+class TodoBoardPage extends StatefulWidget {
+  const TodoBoardPage({super.key});
 
   @override
-  State<TodoListPage> createState() => _TodoListPageState();
+  State<TodoBoardPage> createState() => _TodoBoardPageState();
 }
 
-class _TodoListPageState extends State<TodoListPage> {
-  final TextEditingController _controller = TextEditingController();
-
+class _TodoBoardPageState extends State<TodoBoardPage> {
   @override
   void initState() {
     super.initState();
-    // Carica i dati dal DB non appena il widget è montato
-    Future.microtask(() => context.read<TodoBoardNotifier>().loadTodos());
-  }
-
-  void _showAddDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Aggiungi Task"),
-        content: TextField(
-          controller: _controller,
-          autofocus: true,
-          decoration: const InputDecoration(hintText: "Cosa devi fare?"),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Annulla")),
-          ElevatedButton(
-            onPressed: () {
-              context.read<TodoBoardNotifier>().addTodo(_controller.text);
-              _controller.clear();
-              Navigator.pop(context);
-            },
-            child: const Text("Aggiungi"),
-          ),
-        ],
-      ),
-    );
+    // Carichiamo i dati all'avvio
+    Future.microtask(() => context.read<TodoBoardNotifier>().loadData());
   }
 
   @override
   Widget build(BuildContext context) {
-    final todos = context.watch<TodoBoardNotifier>().todos;
+    final cards = context.watch<TodoBoardNotifier>().cards;
 
     return Scaffold(
-      appBar: AppBar(title: const Text("zKeep SQLite"), elevation: 2),
-      body: todos.isEmpty
-          ? const Center(child: Text("Nessun impegno? Rilassati!"))
+      appBar: AppBar(
+        title: const Text("zKeep - My Cards"),
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+      ),
+      body: cards.isEmpty
+          ? const Center(child: Text("Premi il tasto + per creare una nuova Card"))
           : ListView.builder(
-              itemCount: todos.length,
-              itemBuilder: (context, index) => TodoItemWidget(todo: todos[index]),
+              itemCount: cards.length,
+              itemBuilder: (context, index) => TodoCardWidget(card: cards[index]),
             ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _showAddDialog,
-        child: const Icon(Icons.add),
+        onPressed: () => context.read<TodoBoardNotifier>().addCard(),
+        tooltip: 'Aggiungi Card',
+        child: const Icon(Icons.post_add),
       ),
     );
   }
