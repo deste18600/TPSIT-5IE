@@ -248,10 +248,13 @@ Definisce la struttura delle Card e delle Todo.
 Le righe vengono generate dinamicamente tramite l’operatore spread (`...`).
 la classe è stateless perché non aggiorna lei stessa lo stato della pagina ma attende che sia il notifier a farlo
 
-```dart
+```dartimport 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'model.dart';
+import 'notifier.dart';
+
 class TodoCardWidget extends StatelessWidget {
   final TodoCard card;
-
   const TodoCardWidget({super.key, required this.card});
 
   @override
@@ -261,57 +264,49 @@ class TodoCardWidget extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.all(10),
       elevation: 3,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
           children: [
-            ...card.lines.map(
-              (line) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4.0),
-                child: Row(
-                  children: [
-                    Checkbox(
-                      value: line.checked,
-                      onChanged: (_) => notifier.toggleLine(line),
-                    ),
-                    Expanded(
-                      child: TextField(
-                        controller:
-                            TextEditingController(text: line.text),
-                        decoration: const InputDecoration(
-                          border: InputBorder.none,
-                          hintText: "Scrivi qualcosa...",
-                        ),
-                        onSubmitted: (value) =>
-                            notifier.updateLine(line, value),
+            ...card.lines.map((line) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4.0),
+              child: Row(
+                children: [
+                  Checkbox(
+                    value: line.checked,
+                    onChanged: (_) => notifier.toggleLine(line),
+                  ),
+                  Expanded(
+                    child: TextField(
+                      controller: TextEditingController(text: line.text),
+                      // Aggiorna il post-it in memoria
+                      onChanged: (value) => line.text = value,
+                      //al click salva la linea sul database<>
+                      onTapOutside: (_) {
+                        notifier.updateLine(line, line.text);
+                        FocusScope.of(context).unfocus(); 
+                      },
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        hintText: "Scrivi qualcosa...",
                       ),
                     ),
-                    IconButton(
-                      onPressed: () =>
-                          notifier.deleteLine(card, line),
-                      icon: const Icon(
-                        Icons.close,
-                        color: Colors.grey,
-                        size: 20,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                  IconButton(
+                    onPressed: () => notifier.deleteLine(card, line),
+                    icon: const Icon(Icons.close, color: Colors.grey, size: 20),
+                  ),
+                ],
               ),
-            ),
+            )),
             const Divider(),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 IconButton(
                   onPressed: () => notifier.deleteCard(card),
-                  icon: const Icon(
-                    Icons.delete_forever,
-                    color: Colors.redAccent,
-                  ),
+                  icon: const Icon(Icons.delete_forever, color: Colors.redAccent),
                 ),
                 TextButton.icon(
                   onPressed: () => notifier.addLine(card),
@@ -322,81 +317,6 @@ class TodoCardWidget extends StatelessWidget {
             )
           ],
         ),
-      ),
-    );
-  }
-}
-```
-
----
-
-### main.dart 
-
-Contiene il **punto d’accesso principale** dell’app (`main()`) e definisce la struttura generale dell’interfaccia con **MaterialApp** e **TodoBoardPage**.
-
-```dart
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'notifier.dart';
-import 'widgets.dart';
-
-void main() {
-  runApp(const MyApp());
-}
-```
-App principale che inizializza il ChangeNotifierProvider e carica subito i dati dal database
-
-```dart
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return ChangeNotifierProvider<TodoBoardNotifier>(
-      create: (_) => TodoBoardNotifier()..loadData(),
-      child: MaterialApp(
-        title: 'zKeep',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.red),
-          useMaterial3: true,
-        ),
-        home: const TodoBoardPage(),
-      ),
-    );
-  }
-}
-```
-Pagina principale che osserva il Notifier e aggiorna automaticamente la UI
-
-```dart
-class TodoBoardPage extends StatelessWidget {
-  const TodoBoardPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final cards = context.watch<TodoBoardNotifier>().cards;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("zKeep"),
-        centerTitle: true,
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        elevation: 4,
-      ),
-      body: cards.isEmpty
-          ? const Center(child: Text("Premi + per aggiungere una card"))
-          : ListView.builder(
-              padding: const EdgeInsets.symmetric(vertical: 8.0),
-              itemCount: cards.length,
-              itemBuilder: (context, index) {
-                return TodoCardWidget(card: cards[index]);
-              },
-            ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => context.read<TodoBoardNotifier>().addCard(),
-        tooltip: 'Add Card',
-        child: const Icon(Icons.add),
       ),
     );
   }

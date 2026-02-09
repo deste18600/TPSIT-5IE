@@ -9,6 +9,7 @@ class TodoCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    //context.read per accedere alle funzioni del notifier
     final notifier = context.read<TodoBoardNotifier>();
 
     return Card(
@@ -19,41 +20,64 @@ class TodoCardWidget extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         child: Column(
           children: [
-            ...card.lines.map((line) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4.0),
-              child: Row(
-                children: [
-                  Checkbox(
-                    value: line.checked,
-                    onChanged: (_) => notifier.toggleLine(line),
-                  ),
-                  Expanded(
-                    child: TextField(
-                      controller: TextEditingController(text: line.text),
-                      decoration: const InputDecoration(
-                        border: InputBorder.none,
-                        hintText: "Scrivi qualcosa...",
-                      ),
-                      onSubmitted: (value) => notifier.updateLine(line, value),
+            // Operatore spread (...) e map per generare la lista di righe
+            ...card.lines.map((line) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                child: Row(
+                  children: [
+                    Checkbox(
+                      value: line.checked,
+                      onChanged: (bool? value) {
+                        // Cambia lo stato della riga (check/uncheck) e salva nel database
+                        notifier.toggleLine(line);
+                      },
                     ),
-                  ),
-                  IconButton(
-                    onPressed: () => notifier.deleteLine(card, line),
-                    icon: const Icon(Icons.close, color: Colors.grey, size: 20),
-                  ),
-                ],
-              ),
-            )),
+                    Expanded(
+                      child: TextField(
+                        controller: TextEditingController(text: line.text),
+
+                        onChanged: (String value) {
+                          line.text = value;
+                        },
+                        // onTapOutside: salva nel database quando clicchi fuori dal testo
+                        onTapOutside: (PointerDownEvent event) {
+                          notifier.updateLine(line, line.text);
+                          FocusScope.of(context).unfocus();
+                        },
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                          hintText: "Scrivi qualcosa...",
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () {
+                        // Elimina solo la riga specifica
+                        notifier.deleteLine(card, line);
+                      },
+                      icon: const Icon(Icons.close, color: Colors.grey, size: 20),
+                    ),
+                  ],
+                ),
+              );
+            }),
             const Divider(),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 IconButton(
-                  onPressed: () => notifier.deleteCard(card),
+                  onPressed: () {
+                    // Elimina l'intera card e tutte le sue righe
+                    notifier.deleteCard(card);
+                  },
                   icon: const Icon(Icons.delete_forever, color: Colors.redAccent),
                 ),
                 TextButton.icon(
-                  onPressed: () => notifier.addLine(card),
+                  onPressed: () {
+                    // Aggiunge una nuova riga vuota alla card
+                    notifier.addLine(card);
+                  },
                   icon: const Icon(Icons.add),
                   label: const Text("Aggiungi riga"),
                 ),

@@ -5,9 +5,7 @@ import 'helper.dart';
 class TodoBoardNotifier with ChangeNotifier {
   List<TodoCard> _cards = [];
 
-  List<TodoCard> get cards {
-    return _cards;
-  }
+  List<TodoCard> get cards => _cards;
 
   Future<void> loadData() async {
     _cards = await DatabaseHelper.getCards();
@@ -15,31 +13,31 @@ class TodoBoardNotifier with ChangeNotifier {
   }
 
   void addCard() async {
-    int cardId = await DatabaseHelper.insertCard(); 
-    TodoLine newLine = TodoLine(cardId: cardId, text: "Nuova riga");
+    int cardId = await DatabaseHelper.insertCard();
+    TodoLine newLine = TodoLine(cardId: cardId, text: ""); // Testo vuoto di default
     int lineId = await DatabaseHelper.insertLine(newLine);
-    newLine.id = lineId; 
+    newLine.id = lineId;
     _cards.add(TodoCard(id: cardId, lines: [newLine]));
     notifyListeners();
   }
 
   void addLine(TodoCard card) async {
-    TodoLine newLine = TodoLine(cardId: card.id, text: "Nuova riga");
+    TodoLine newLine = TodoLine(cardId: card.id, text: "");
     int lineId = await DatabaseHelper.insertLine(newLine);
     newLine.id = lineId;
     card.lines.add(newLine);
     notifyListeners();
   }
 
-  void updateLine(TodoLine line, String newText) {
+  void updateLine(TodoLine line, String newText) async {
     line.text = newText;
-    DatabaseHelper.updateLine(line);
-    notifyListeners();
+    await DatabaseHelper.updateLine(line); // Salva nel DB
+    // Non chiamiamo notifyListeners qui per non disturbare la scrittura
   }
 
-  void toggleLine(TodoLine line) {
+  void toggleLine(TodoLine line) async {
     line.checked = !line.checked;
-    DatabaseHelper.updateLine(line);
+    await DatabaseHelper.updateLine(line);
     notifyListeners();
   }
 

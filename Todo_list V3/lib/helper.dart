@@ -3,7 +3,7 @@ import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
 class DatabaseHelper {
-  static Database? _db; 
+  static Database? _db;
 
   static Future<Database> get _database async {
     if (_db != null) return _db!;
@@ -13,18 +13,26 @@ class DatabaseHelper {
 
   static Future<Database> _init() async {
     String path = join(await getDatabasesPath(), 'zkeep.db');
-    return await openDatabase(path, version: 1, onCreate: (db, version) async {
-      await db.execute('CREATE TABLE cards (id INTEGER PRIMARY KEY AUTOINCREMENT)');
-      await db.execute('''
-        CREATE TABLE lines (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          card_id INTEGER,
-          text TEXT,
-          checked INTEGER,
-          FOREIGN KEY (card_id) REFERENCES cards (id) ON DELETE CASCADE
-        )
-      ''');
-    });
+    return await openDatabase(
+      path,
+      version: 1,
+      onConfigure: (db) async {
+        // Fondamentale per far funzionare il DELETE CASCADE
+        await db.execute('PRAGMA foreign_keys = ON');
+      },
+      onCreate: (db, version) async {
+        await db.execute('CREATE TABLE cards (id INTEGER PRIMARY KEY AUTOINCREMENT)');
+        await db.execute('''
+          CREATE TABLE lines (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            card_id INTEGER,
+            text TEXT,
+            checked INTEGER,
+            FOREIGN KEY (card_id) REFERENCES cards (id) ON DELETE CASCADE
+          )
+        ''');
+      },
+    );
   }
 
   static Future<List<TodoCard>> getCards() async {
@@ -34,16 +42,16 @@ class DatabaseHelper {
     for (var cardMap in cardMaps) {
       int cardId = cardMap['id'];
       final List<Map<String, dynamic>> lineMaps = await db.query(
-        'lines', 
-        where: 'card_id = ?', 
-        whereArgs: [cardId]
+        'lines',
+        where: 'card_id = ?',
+        whereArgs: [cardId],
       );
       List<TodoLine> lines = lineMaps.map((l) => TodoLine(
-        id: l['id'],
-        cardId: l['card_id'],
-        text: l['text'] ?? "",
-        checked: l['checked'] == 1,
-      )).toList();
+            id: l['id'],
+            cardId: l['card_id'],
+            text: l['text'] ?? "",
+            checked: l['checked'] == 1,
+          )).toList();
       results.add(TodoCard(id: cardId, lines: lines));
     }
     return results;
@@ -51,7 +59,7 @@ class DatabaseHelper {
 
   static Future<int> insertCard() async {
     final db = await _database;
-    return await db.insert('cards', {'id': null}); 
+    return await db.insert('cards', {'id': null});
   }
 
   static Future<void> deleteCard(int id) async {
