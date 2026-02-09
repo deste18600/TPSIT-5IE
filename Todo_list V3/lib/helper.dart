@@ -17,7 +17,6 @@ class DatabaseHelper {
       path,
       version: 1,
       onConfigure: (db) async {
-        // Fondamentale per far funzionare il DELETE CASCADE
         await db.execute('PRAGMA foreign_keys = ON');
       },
       onCreate: (db, version) async {

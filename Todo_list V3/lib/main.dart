@@ -13,7 +13,11 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<TodoBoardNotifier>(
-      create: (_) => TodoBoardNotifier()..loadData(),
+      create: (BuildContext context) {
+        final notifier = TodoBoardNotifier();
+        notifier.loadData();
+        return notifier;
+      },
       child: MaterialApp(
         title: 'zKeep',
         debugShowCheckedModeBanner: false,
@@ -32,14 +36,14 @@ class TodoBoardPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cards = context.watch<TodoBoardNotifier>().cards;
+    final notifier = context.watch<TodoBoardNotifier>();
+    final cards = notifier.cards;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text("zKeep"),
         centerTitle: true,
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        elevation: 4,
       ),
       body: cards.isEmpty
           ? const Center(child: Text("Premi + per aggiungere una card"))
@@ -47,11 +51,15 @@ class TodoBoardPage extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 8.0),
               itemCount: cards.length,
               itemBuilder: (context, index) {
-                return TodoCardWidget(card: cards[index]);
+                final cardSingola = cards[index];
+                return TodoCardWidget(card: cardSingola);
               },
             ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => context.read<TodoBoardNotifier>().addCard(),
+        onPressed: () {
+          final notifierSenzaAscolto = context.read<TodoBoardNotifier>();
+          notifierSenzaAscolto.addCard();
+        },
         tooltip: 'Add Card',
         child: const Icon(Icons.add),
       ),

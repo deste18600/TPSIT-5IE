@@ -6,12 +6,14 @@ class TodoLine {
 
   TodoLine({this.id, this.cardId, required this.text, this.checked = false});
 
-  Map<String, dynamic> toMap() => {
-    'id': id,
-    'card_id': cardId,
-    'text': text,
-    'checked': checked ? 1 : 0,
-  };
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'card_id': cardId,
+      'text': text,
+      'checked': checked ? 1 : 0,
+    };
+  }
 }
 
 class TodoCard {

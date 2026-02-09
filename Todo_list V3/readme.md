@@ -10,7 +10,6 @@ Consente di gestire una bacheca di note dinamiche organizzate in **Card** con pe
 
 ---
 
-## Analisi dei file principali
 
 ### model.dart – Modello dati
 
@@ -37,7 +36,12 @@ class TodoCard {
 
 ### helper.dart – Gestione database
 Gestisce l’inizializzazione del database e la creazione delle tabelle.  
-È presente una **Foreign Key** con `ON DELETE CASCADE` per mantenere l’integrità dei dati.
+È presente una **Foreign Key** con `ON DELETE CASCADE` per mantenere l’integrità dei dati, questa è supportata dal metodo  
+
+```dart
+await db.execute('PRAGMA foreign_keys = ON');
+```
+che serve a configurare il database, in questo caso per abilitare le chiavi esterne ed eliminare tutte line associate a una card quando questa viene eliminata.
 
 la classe databaseHelper accede al database grazie a questo metodo:
 
@@ -50,16 +54,21 @@ la classe databaseHelper accede al database grazie a questo metodo:
 ```
 
 successivamente chiede al sistema operativo il percorso dove salvare i propri dati e file
-inoltre se è la prima volta che apro il file usa il metodo oncreate per creare le tabelle
-```dart
- static Future<Database> _init() async {
- String path = join(await getDatabasesPath(), 'zkeep.db');
-return await openDatabase(path, version: 1, onCreate: (db, version) async {
-  await db.execute('CREATE TABLE cards (id INTEGER PRIMARY KEY AUTOINCREMENT)');
+inoltre se è la prima volta che apro il file usa il metodo oNcreate per creare le tabelle
 
-```
+Fondamentale per far funzionare il DELETE CASCADE
+        //Pragma serve a configurare il database, in questo caso per abilitare le chiavi esterne
+        //ed eliminare tutte line associate a una card quando questa viene eliminata.
 
 ```dart
+static Future<Database> _init() async {
+    String path = join(await getDatabasesPath(), 'zkeep.db');
+    return await openDatabase(
+      path,
+      version: 1,
+      onConfigure: (db) async {
+        await db.execute('PRAGMA foreign_keys = ON');
+      },
 await db.execute('''
   CREATE TABLE lines (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -248,7 +257,8 @@ Definisce la struttura delle Card e delle Todo.
 Le righe vengono generate dinamicamente tramite l’operatore spread (`...`).
 la classe è stateless perché non aggiorna lei stessa lo stato della pagina ma attende che sia il notifier a farlo
 
-```dartimport 'package:flutter/material.dart';
+```dart
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'model.dart';
 import 'notifier.dart';
@@ -322,3 +332,85 @@ class TodoCardWidget extends StatelessWidget {
   }
 }
 ```
+## main.dart:
+Il file main.dart rappresenta il punto di ingresso dell'applicazione.
+Si occupa di inizializzare il provider per la gestione dello stato e di costruire l'interfaccia utente principale.
+
+## ChangeNotifierProvider:
+ Avvolge l'intera applicazione, creando un'istanza di TodoBoardNotifier e richiamando immediatamente loadData() per caricare le note esistenti dal database all'avvio.
+
+## TodoBoardPage:
+ È una StatelessWidget che osserva lo stato tramite context.watch.
+
+Se la lista delle card è vuota, mostra un messaggio informativo.
+
+## FloatingActionButton:
+ Permette l'aggiunta di nuove card interagendo con il notifier tramite context.read (senza attivare un ascolto continuo, poiché serve solo a scatenare l'azione del click).
+
+
+```dart
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider<TodoBoardNotifier>(
+      create: (BuildContext context) {
+        final notifier = TodoBoardNotifier();
+        notifier.loadData();
+        return notifier;
+      },
+      child: MaterialApp(
+        title: 'zKeep',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.red),
+          useMaterial3: true,
+        ),
+        home: const TodoBoardPage(),
+      ),
+    );
+  }
+}
+
+class TodoBoardPage extends StatelessWidget {
+  const TodoBoardPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final notifier = context.watch<TodoBoardNotifier>();
+    final cards = notifier.cards;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("zKeep"),
+        centerTitle: true,
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+      ),
+      body: cards.isEmpty
+          ? const Center(child: Text("Premi + per aggiungere una card"))
+          : ListView.builder(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              itemCount: cards.length,
+              itemBuilder: (context, index) {
+                final cardSingola = cards[index];
+                return TodoCardWidget(card: cardSingola);
+              },
+            ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          final notifierSenzaAscolto = context.read<TodoBoardNotifier>();
+          notifierSenzaAscolto.addCard();
+        },
+        tooltip: 'Add Card',
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+```
+
