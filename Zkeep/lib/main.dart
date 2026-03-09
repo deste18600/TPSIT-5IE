@@ -62,18 +62,14 @@ class TodoBoardPage extends StatelessWidget {
               ),
             ),
 
-      // --- FAB aggiornato per aprire subito EditNoteScreen ---
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           final notifier = context.read<TodoBoardNotifier>();
 
-          // crea la nuova card e ottieni l'id
           final newCardId = await notifier.addCard();
 
-          // prendi la card appena creata
           final newCard = notifier.cards.firstWhere((c) => c.id == newCardId);
-
-          // apri subito EditNoteScreen
+          
           Navigator.push(
             context,
             MaterialPageRoute(
