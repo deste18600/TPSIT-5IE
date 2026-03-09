@@ -16,7 +16,7 @@ class MyApp extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (context) {
         final notifier = TodoBoardNotifier();
-        notifier.loadData(); // carica le card dal database all'avvio
+        notifier.loadData(); 
         return notifier;
       },
       child: MaterialApp(
@@ -69,7 +69,7 @@ class TodoBoardPage extends StatelessWidget {
           final newCardId = await notifier.addCard();
 
           final newCard = notifier.cards.firstWhere((c) => c.id == newCardId);
-          
+
           Navigator.push(
             context,
             MaterialPageRoute(
