@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import '../models/instrument.dart';
 import '../services/audio_service.dart';
+import '../services/database_helper.dart';
+import '../services/api_service.dart';
 import '../widgets/frequency_gauge.dart';
 import '../widgets/string_selector.dart';
+import 'history_screen.dart';
 
 class TunerScreen extends StatefulWidget {
   const TunerScreen({super.key});
@@ -18,6 +21,7 @@ class _TunerScreenState extends State<TunerScreen> {
   int _selectedStringIndex = 0;
   double _detectedFrequency = 0.0;
   double _centsOffset = 0.0;
+  bool _sessionSaved = false;
 
   @override
   void initState() {
@@ -27,10 +31,22 @@ class _TunerScreenState extends State<TunerScreen> {
     _audioService.frequencyStream.listen((frequency) {
       final target = _getTargetFrequency();
       final cents = AudioService.calculateCents(frequency, target);
+
       setState(() {
         _detectedFrequency = frequency;
         _centsOffset = cents.clamp(-100.0, 100.0);
       });
+
+      // Salva automaticamente quando la corda è accordata
+      if (cents.abs() <= 5 && !_sessionSaved) {
+        _sessionSaved = true;
+        _saveSession(frequency, cents);
+      }
+
+      // Reset flag quando si scorda
+      if (cents.abs() > 10) {
+        _sessionSaved = false;
+      }
     });
   }
 
@@ -44,7 +60,10 @@ class _TunerScreenState extends State<TunerScreen> {
   }
 
   void _onStringSelected(int index) {
-    setState(() => _selectedStringIndex = index);
+    setState(() {
+      _selectedStringIndex = index;
+      _sessionSaved = false;
+    });
     _updateTargetFrequency();
   }
 
@@ -52,8 +71,38 @@ class _TunerScreenState extends State<TunerScreen> {
     setState(() {
       _selectedInstrument = instrument;
       _selectedStringIndex = 0;
+      _sessionSaved = false;
     });
     _updateTargetFrequency();
+  }
+
+  /// Salva la sessione nel database locale e prova a inviarla al server.
+  Future<void> _saveSession(double detected, double cents) async {
+    final session = {
+      'instrument': _selectedInstrument.name,
+      'string_name': _selectedInstrument.strings[_selectedStringIndex],
+      'target_frequency': _getTargetFrequency(),
+      'detected_frequency': detected,
+      'cents_offset': cents,
+      'tuned': cents.abs() <= 5 ? 1 : 0,
+      'created_at': DateTime.now().toString().substring(0, 16),
+    };
+
+    // Salva sempre in locale
+    await DatabaseHelper.insertSession(session);
+
+    // Prova a inviare al server (POST)
+    await ApiService.postSession(session);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✓ Corda accordata e sessione salvata!'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   String _getTuningStatus() {
@@ -88,6 +137,16 @@ class _TunerScreenState extends State<TunerScreen> {
         elevation: 0,
         title: _buildInstrumentSelector(),
         centerTitle: true,
+        actions: [
+          // Bottone storico
+          IconButton(
+            icon: const Icon(Icons.history, color: Colors.white),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const HistoryScreen()),
+            ),
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -128,7 +187,7 @@ class _TunerScreenState extends State<TunerScreen> {
 
           const SizedBox(height: 8),
 
-          // Status
+          // Status accordatura
           Text(
             _getTuningStatus(),
             style: TextStyle(
@@ -176,7 +235,7 @@ class _TunerScreenState extends State<TunerScreen> {
 
   Widget _buildInstrumentSelector() {
     return GestureDetector(
-      onTap: () => _showInstrumentPicker(),
+      onTap: _showInstrumentPicker,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
