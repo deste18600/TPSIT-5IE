@@ -14,7 +14,6 @@ class StringSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Divide le corde in sinistra e destra come GuitarTuna
     final leftStrings = <int>[];
     final rightStrings = <int>[];
 
@@ -29,25 +28,84 @@ class StringSelector extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        // Colonna sinistra
         Column(
           children: leftStrings.map((i) => _buildButton(i)).toList(),
         ),
-
-        // Immagine testiera (placeholder)
+        // Tastiera chitarra mockup nera ed oro
         Container(
-          width: 120,
-          height: 200,
+          width: 96,
+          height: 180,
           decoration: BoxDecoration(
-            color: const Color(0xFFD4A574),
-            borderRadius: BorderRadius.circular(12),
+            gradient: const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFF222222), Color(0xFF111111)],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: const Color(0xFFD4AF37),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFD4AF37).withOpacity(0.1),
+                blurRadius: 10,
+                spreadRadius: 2,
+              )
+            ],
           ),
-          child: const Center(
-            child: Text('🎸', style: TextStyle(fontSize: 60)),
+          child: Stack(
+            children: [
+              // Frets (tasti chitarra)
+              Positioned.fill(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: List.generate(
+                    5,
+                    (index) => Container(
+                      height: 1,
+                      color: const Color(0xFFD4AF37).withOpacity(0.2),
+                    ),
+                  ),
+                ),
+              ),
+              // Strings (corde dorate)
+              Positioned.fill(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: List.generate(
+                    4,
+                    (index) => Container(
+                      width: 1.2,
+                      color: const Color(0xFFD4AF37).withOpacity(0.5),
+                    ),
+                  ),
+                ),
+              ),
+              // Cerchio centrale con emoji chitarra
+              Center(
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF0A0A0A),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black54,
+                        blurRadius: 4,
+                        spreadRadius: 1,
+                      )
+                    ],
+                  ),
+                  child: const Text(
+                    '🎸',
+                    style: TextStyle(fontSize: 28),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
-
-        // Colonna destra
         Column(
           children: rightStrings.map((i) => _buildButton(i)).toList(),
         ),
@@ -58,26 +116,35 @@ class StringSelector extends StatelessWidget {
   Widget _buildButton(int index) {
     final isSelected = index == selectedIndex;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: GestureDetector(
         onTap: () => onSelected(index),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          width: 64,
-          height: 64,
+          width: 58,
+          height: 58,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: isSelected ? Colors.blueAccent : const Color(0xFF2A2A3E),
+            color: isSelected ? const Color(0xFFD4AF37) : const Color(0xFF161616),
             border: Border.all(
-              color: isSelected ? Colors.blueAccent : Colors.white24,
-              width: 2,
+              color: isSelected ? const Color(0xFFD4AF37) : const Color(0xFFD4AF37).withOpacity(0.3),
+              width: 1.5,
             ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: const Color(0xFFD4AF37).withOpacity(0.4),
+                      blurRadius: 8,
+                      spreadRadius: 1,
+                    )
+                  ]
+                : null,
           ),
           child: Center(
             child: Text(
               strings[index],
               style: TextStyle(
-                color: isSelected ? Colors.white : Colors.white70,
+                color: isSelected ? const Color(0xFF0A0A0A) : const Color(0xFFC5A880),
                 fontWeight: FontWeight.bold,
                 fontSize: 13,
               ),

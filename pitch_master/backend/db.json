@@ -1,0 +1,49 @@
+{
+  "brani": [
+    {
+      "id": "1",
+      "titolo": "Wish You Were Here",
+      "autore": "Pink Floyd"
+    },
+    {
+      "id": "2",
+      "titolo": "Hotel California",
+      "autore": "Eagles"
+    },
+    {
+      "titolo": "etrusco gay",
+      "autore": "etrusco",
+      "id": "i3ut-K6Ilnw"
+    },
+    {
+      "titolo": "124",
+      "autore": "133",
+      "id": "C39_xR9MXlY"
+    },
+    {
+      "titolo": "124",
+      "autore": "133",
+      "id": "ySTDyVTz19g"
+    },
+    {
+      "titolo": "124",
+      "autore": "133",
+      "id": "US-1jnMuFGM"
+    }
+  ],
+  "spartiti": [
+    {
+      "nome_file": "chiesa",
+      "percorso_file": "/data/user/0/com.example.pitch_master/app_flutter/spartiti/Canzoniere con accordi_260112_082241.pdf",
+      "note": "Standard",
+      "id": "e9DXy0vrIaI"
+    },
+    {
+      "nome_file": "e",
+      "percorso_file": "/data/user/0/com.example.pitch_master/app_flutter/spartiti/593_Circ._incontro_sulla_questione_israelo-palestinese_25_maggio_2026.pdf",
+      "note": "dr",
+      "id": "qjm2WwJ-rj0"
+    }
+  ],
+  "$schema": "./node_modules/json-server/schema.json"
+}

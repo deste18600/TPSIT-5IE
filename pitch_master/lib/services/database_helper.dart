@@ -1,12 +1,9 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
-/// Gestisce il database SQLite locale.
-/// Salva le sessioni di accordatura come cache offline.
 class DatabaseHelper {
   static Database? _database;
 
-  /// Restituisce l'istanza del database, creandola se necessario.
   static Future<Database> getDatabase() async {
     _database ??= await _initDatabase();
     return _database!;
@@ -14,51 +11,70 @@ class DatabaseHelper {
 
   static Future<Database> _initDatabase() async {
     final path = join(await getDatabasesPath(), 'pitch_master.db');
-    return await openDatabase(
-      path,
-      version: 1,
-      onCreate: _onCreate,
-    );
+    return await openDatabase(path, version: 2, onCreate: _onCreate, onUpgrade: _onUpgrade);
   }
 
-  /// Crea le tabelle al primo avvio dell'app.
   static Future<void> _onCreate(Database db, int version) async {
-    // Tabella sessioni di accordatura
     await db.execute('''
-      CREATE TABLE sessions (
+      CREATE TABLE spartiti (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        instrument TEXT NOT NULL,
-        string_name TEXT NOT NULL,
-        target_frequency REAL NOT NULL,
-        detected_frequency REAL NOT NULL,
-        cents_offset REAL NOT NULL,
-        tuned INTEGER NOT NULL,
-        created_at TEXT NOT NULL
+        nome_file TEXT NOT NULL,
+        percorso_file TEXT NOT NULL,
+        note TEXT
       )
     ''');
   }
 
-  /// Salva una sessione di accordatura nel database.
-  static Future<int> insertSession(Map<String, dynamic> session) async {
-    final db = await getDatabase();
-    return await db.insert('sessions', session);
+  static Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      // Ricrea la tabella spartiti senza brano_id
+      await db.execute('DROP TABLE IF EXISTS spartiti');
+      await db.execute('DROP TABLE IF EXISTS brani');
+      await db.execute('''
+        CREATE TABLE spartiti (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          nome_file TEXT NOT NULL,
+          percorso_file TEXT NOT NULL,
+          note TEXT
+        )
+      ''');
+    }
   }
 
-  /// Recupera tutte le sessioni salvate, dalla più recente.
-  static Future<List<Map<String, dynamic>>> getSessions() async {
+  static Future<List<Map<String, dynamic>>> getAllSpartiti() async {
     final db = await getDatabase();
-    return await db.query('sessions', orderBy: 'id DESC');
+    return await db.query('spartiti', orderBy: 'id DESC');
   }
 
-  /// Elimina una sessione per ID.
-  static Future<void> deleteSession(int id) async {
+  static Future<void> cacheSpartiti(List<Map<String, dynamic>> spartiti) async {
     final db = await getDatabase();
-    await db.delete('sessions', where: 'id = ?', whereArgs: [id]);
+    final batch = db.batch();
+    for (final s in spartiti) {
+      batch.insert('spartiti', {
+        'nome_file': s['nome_file'],
+        'percorso_file': s['percorso_file'] ?? '',
+        'note': s['note'] ?? '',
+      }, conflictAlgorithm: ConflictAlgorithm.ignore);
+    }
+    await batch.commit();
   }
 
-  /// Elimina tutte le sessioni.
-  static Future<void> clearSessions() async {
+  static Future<void> insertSpartito(Map<String, dynamic> spartito) async {
     final db = await getDatabase();
-    await db.delete('sessions');
+    await db.insert('spartiti', {
+      'nome_file': spartito['nome_file'],
+      'percorso_file': spartito['percorso_file'] ?? '',
+      'note': spartito['note'] ?? '',
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  static Future<void> updateSpartito(int id, Map<String, dynamic> fields) async {
+    final db = await getDatabase();
+    await db.update('spartiti', fields, where: 'id = ?', whereArgs: [id]);
+  }
+
+  static Future<void> deleteSpartito(int id) async {
+    final db = await getDatabase();
+    await db.delete('spartiti', where: 'id = ?', whereArgs: [id]);
   }
 }

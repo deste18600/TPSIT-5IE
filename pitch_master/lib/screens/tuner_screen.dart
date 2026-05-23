@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/instrument.dart';
 import '../services/audio_service.dart';
-import '../services/database_helper.dart';
-import '../services/api_service.dart';
 import '../widgets/frequency_gauge.dart';
 import '../widgets/string_selector.dart';
-import 'history_screen.dart';
 
 class TunerScreen extends StatefulWidget {
   const TunerScreen({super.key});
@@ -21,7 +18,6 @@ class _TunerScreenState extends State<TunerScreen> {
   int _selectedStringIndex = 0;
   double _detectedFrequency = 0.0;
   double _centsOffset = 0.0;
-  bool _sessionSaved = false;
 
   @override
   void initState() {
@@ -36,17 +32,6 @@ class _TunerScreenState extends State<TunerScreen> {
         _detectedFrequency = frequency;
         _centsOffset = cents.clamp(-100.0, 100.0);
       });
-
-      // Salva automaticamente quando la corda è accordata
-      if (cents.abs() <= 5 && !_sessionSaved) {
-        _sessionSaved = true;
-        _saveSession(frequency, cents);
-      }
-
-      // Reset flag quando si scorda
-      if (cents.abs() > 10) {
-        _sessionSaved = false;
-      }
     });
   }
 
@@ -60,10 +45,7 @@ class _TunerScreenState extends State<TunerScreen> {
   }
 
   void _onStringSelected(int index) {
-    setState(() {
-      _selectedStringIndex = index;
-      _sessionSaved = false;
-    });
+    setState(() => _selectedStringIndex = index);
     _updateTargetFrequency();
   }
 
@@ -71,38 +53,8 @@ class _TunerScreenState extends State<TunerScreen> {
     setState(() {
       _selectedInstrument = instrument;
       _selectedStringIndex = 0;
-      _sessionSaved = false;
     });
     _updateTargetFrequency();
-  }
-
-  /// Salva la sessione nel database locale e prova a inviarla al server.
-  Future<void> _saveSession(double detected, double cents) async {
-    final session = {
-      'instrument': _selectedInstrument.name,
-      'string_name': _selectedInstrument.strings[_selectedStringIndex],
-      'target_frequency': _getTargetFrequency(),
-      'detected_frequency': detected,
-      'cents_offset': cents,
-      'tuned': cents.abs() <= 5 ? 1 : 0,
-      'created_at': DateTime.now().toString().substring(0, 16),
-    };
-
-    // Salva sempre in locale
-    await DatabaseHelper.insertSession(session);
-
-    // Prova a inviare al server (POST)
-    await ApiService.postSession(session);
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✓ Corda accordata e sessione salvata!'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
   }
 
   String _getTuningStatus() {
@@ -131,105 +83,135 @@ class _TunerScreenState extends State<TunerScreen> {
     final targetFreq = _getTargetFrequency();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF1A1A2E),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1A2E),
-        elevation: 0,
         title: _buildInstrumentSelector(),
         centerTitle: true,
-        actions: [
-          // Bottone storico
-          IconButton(
-            icon: const Icon(Icons.history, color: Colors.white),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const HistoryScreen()),
-            ),
-          ),
-        ],
       ),
-      body: Column(
-        children: [
-          const SizedBox(height: 16),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const SizedBox(height: 8),
 
-          // Nota target
-          Text(
-            targetNote,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 36,
-              fontWeight: FontWeight.bold,
+                // Nota target
+                Text(
+                  targetNote,
+                  style: const TextStyle(
+                    color: Color(0xFFD4AF37), // Oro per la nota principale
+                    fontSize: 42,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                Text(
+                  '${targetFreq.toStringAsFixed(1)} Hz',
+                  style: const TextStyle(
+                    color: Color(0xFFC5A880), // Oro morbido per frequenza target
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                // Gauge analogico dorato
+                FrequencyGauge(centsOffset: _centsOffset),
+
+                const SizedBox(height: 12),
+
+                // Frequenza rilevata
+                Text(
+                  _detectedFrequency > 0
+                      ? '${_detectedFrequency.toStringAsFixed(1)} Hz'
+                      : '0.0 Hz',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+
+                const SizedBox(height: 4),
+
+                // Status accordatura
+                Text(
+                  _getTuningStatus(),
+                  style: TextStyle(
+                    color: _getStatusColor(),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Bottone microfono integrato ed elegante (non più floating button che si sovrappone)
+                GestureDetector(
+                  onTap: () async {
+                    if (_audioService.isListening) {
+                      await _audioService.stopListening();
+                      setState(() {
+                        _detectedFrequency = 0;
+                        _centsOffset = 0;
+                      });
+                    } else {
+                      await _audioService.startListening();
+                      setState(() {});
+                    }
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _audioService.isListening
+                          ? const Color(0xFFE74C3C).withOpacity(0.15)
+                          : const Color(0xFFD4AF37).withOpacity(0.1),
+                      border: Border.all(
+                        color: _audioService.isListening
+                            ? const Color(0xFFE74C3C)
+                            : const Color(0xFFD4AF37),
+                        width: 2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: _audioService.isListening
+                              ? const Color(0xFFE74C3C).withOpacity(0.2)
+                              : const Color(0xFFD4AF37).withOpacity(0.15),
+                          blurRadius: 10,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      _audioService.isListening ? Icons.stop : Icons.mic,
+                      size: 26,
+                      color: _audioService.isListening
+                          ? const Color(0xFFE74C3C)
+                          : const Color(0xFFD4AF37),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Selettore corde
+                StringSelector(
+                  strings: _selectedInstrument.strings,
+                  selectedIndex: _selectedStringIndex,
+                  onSelected: _onStringSelected,
+                ),
+                
+                const SizedBox(height: 12),
+              ],
             ),
           ),
-          Text(
-            '${targetFreq.toStringAsFixed(1)} Hz',
-            style: const TextStyle(color: Colors.white54, fontSize: 14),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Gauge
-          FrequencyGauge(centsOffset: _centsOffset),
-
-          const SizedBox(height: 16),
-
-          // Frequenza rilevata
-          Text(
-            _detectedFrequency > 0
-                ? '${_detectedFrequency.toStringAsFixed(1)} Hz'
-                : '0.0 Hz',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-
-          const SizedBox(height: 8),
-
-          // Status accordatura
-          Text(
-            _getTuningStatus(),
-            style: TextStyle(
-              color: _getStatusColor(),
-              fontSize: 16,
-            ),
-          ),
-
-          const SizedBox(height: 32),
-
-          // Selettore corde
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: StringSelector(
-              strings: _selectedInstrument.strings,
-              selectedIndex: _selectedStringIndex,
-              onSelected: _onStringSelected,
-            ),
-          ),
-        ],
-      ),
-
-      // Bottone microfono
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          setState(() {
-            if (_audioService.isListening) {
-              _audioService.stopListening();
-              _detectedFrequency = 0;
-              _centsOffset = 0;
-            } else {
-              _audioService.startListening();
-            }
-          });
-        },
-        backgroundColor:
-            _audioService.isListening ? Colors.redAccent : Colors.blueAccent,
-        child: Icon(
-          _audioService.isListening ? Icons.stop : Icons.mic,
         ),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 
@@ -237,10 +219,21 @@ class _TunerScreenState extends State<TunerScreen> {
     return GestureDetector(
       onTap: _showInstrumentPicker,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.blueAccent,
+          color: const Color(0xFF161616),
           borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: const Color(0xFFD4AF37),
+            width: 1.2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFD4AF37).withOpacity(0.08),
+              blurRadius: 6,
+              spreadRadius: 1,
+            )
+          ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -248,11 +241,17 @@ class _TunerScreenState extends State<TunerScreen> {
             Text(
               _selectedInstrument.name,
               style: const TextStyle(
-                color: Colors.white,
+                color: Color(0xFFD4AF37),
                 fontWeight: FontWeight.bold,
+                fontSize: 15,
               ),
             ),
-            const Icon(Icons.chevron_right, color: Colors.white),
+            const SizedBox(width: 4),
+            const Icon(
+              Icons.keyboard_arrow_down,
+              color: Color(0xFFD4AF37),
+              size: 20,
+            ),
           ],
         ),
       ),
@@ -262,25 +261,63 @@ class _TunerScreenState extends State<TunerScreen> {
   void _showInstrumentPicker() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF2A2A3E),
+      backgroundColor: const Color(0xFF161616),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (context) {
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: defaultInstruments.map((instrument) {
-            return ListTile(
-              title: Text(
-                instrument.name,
-                style: const TextStyle(color: Colors.white),
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Barra dorata di drag estetica
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 10),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD4AF37).withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-              trailing: _selectedInstrument.name == instrument.name
-                  ? const Icon(Icons.check, color: Colors.blueAccent)
-                  : null,
-              onTap: () {
-                _onInstrumentChanged(instrument);
-                Navigator.pop(context);
-              },
-            );
-          }).toList(),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8.0),
+                child: Text(
+                  'Seleziona Strumento',
+                  style: TextStyle(
+                    color: Color(0xFFD4AF37),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+              const Divider(color: Colors.white10),
+              ...defaultInstruments.map((instrument) {
+                final isSelected = _selectedInstrument.name == instrument.name;
+                return ListTile(
+                  title: Text(
+                    instrument.name,
+                    style: TextStyle(
+                      color: isSelected ? const Color(0xFFD4AF37) : Colors.white70,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  ),
+                  leading: Icon(
+                    Icons.music_note,
+                    color: isSelected ? const Color(0xFFD4AF37) : Colors.white30,
+                  ),
+                  trailing: isSelected
+                      ? const Icon(Icons.check, color: Color(0xFFD4AF37))
+                      : null,
+                  onTap: () {
+                    _onInstrumentChanged(instrument);
+                    Navigator.pop(context);
+                  },
+                );
+              }),
+              const SizedBox(height: 12),
+            ],
+          ),
         );
       },
     );

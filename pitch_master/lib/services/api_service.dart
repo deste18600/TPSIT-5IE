@@ -1,99 +1,83 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 
-/// Gestisce la comunicazione con il server REST.
-/// Se il server non è raggiungibile, l'app usa il database locale come cache.
 class ApiService {
-  // Cambia questo URL con il tuo server quando disponibile
-  static const String baseUrl = 'http://10.0.2.2:3000';
+  static const String baseUrl = 'http://192.168.1.132:3000';
+  static const _timeout = Duration(seconds: 3);
+  static const _uploadTimeout = Duration(seconds: 5);
 
-  // =====================
-  // SESSIONS
-  // =====================
-
-  /// GET /sessions - Recupera tutte le sessioni dal server.
-  static Future<List<dynamic>?> getSessions() async {
+  // GET tutti gli spartiti
+  static Future<List<dynamic>?> getAllSpartiti() async {
     try {
       final response = await http
-          .get(Uri.parse('$baseUrl/sessions'))
-          .timeout(const Duration(seconds: 5));
-
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body);
-      }
+          .get(Uri.parse('$baseUrl/spartiti'))
+          .timeout(_timeout);
+      if (response.statusCode == 200) return jsonDecode(response.body);
       return null;
-    } catch (e) {
-      // Server non raggiungibile, usa cache locale
-      print('Server non raggiungibile: $e');
+    } catch (_) {
       return null;
     }
   }
 
-  /// POST /sessions - Invia una sessione al server.
-  static Future<bool> postSession(Map<String, dynamic> session) async {
+  static Future<bool> createSpartito(Map<String, dynamic> spartito) async {
     try {
       final response = await http
           .post(
-            Uri.parse('$baseUrl/sessions'),
+            Uri.parse('$baseUrl/spartiti'),
             headers: {'Content-Type': 'application/json'},
-            body: jsonEncode(session),
+            body: jsonEncode(spartito),
           )
-          .timeout(const Duration(seconds: 5));
-
-      return response.statusCode == 201 || response.statusCode == 200;
-    } catch (e) {
-      print('Errore POST session: $e');
+          .timeout(_timeout);
+      return response.statusCode == 201;
+    } catch (_) {
       return false;
     }
   }
 
-  /// PUT /sessions/:id - Aggiorna una sessione completa.
-  static Future<bool> putSession(int id, Map<String, dynamic> session) async {
-    try {
-      final response = await http
-          .put(
-            Uri.parse('$baseUrl/sessions/$id'),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode(session),
-          )
-          .timeout(const Duration(seconds: 5));
-
-      return response.statusCode == 200;
-    } catch (e) {
-      print('Errore PUT session: $e');
-      return false;
-    }
-  }
-
-  /// PATCH /sessions/:id - Aggiornamento parziale di una sessione.
-  static Future<bool> patchSession(int id, Map<String, dynamic> fields) async {
+  static Future<bool> patchSpartito(dynamic id, Map<String, dynamic> fields) async {
     try {
       final response = await http
           .patch(
-            Uri.parse('$baseUrl/sessions/$id'),
+            Uri.parse('$baseUrl/spartiti/$id'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode(fields),
           )
-          .timeout(const Duration(seconds: 5));
-
+          .timeout(_timeout);
       return response.statusCode == 200;
-    } catch (e) {
-      print('Errore PATCH session: $e');
+    } catch (_) {
       return false;
     }
   }
 
-  /// DELETE /sessions/:id - Elimina una sessione dal server.
-  static Future<bool> deleteSession(int id) async {
+  static Future<bool> deleteSpartito(dynamic id) async {
     try {
       final response = await http
-          .delete(Uri.parse('$baseUrl/sessions/$id'))
-          .timeout(const Duration(seconds: 5));
-
+          .delete(Uri.parse('$baseUrl/spartiti/$id'))
+          .timeout(_timeout);
       return response.statusCode == 200 || response.statusCode == 204;
-    } catch (e) {
-      print('Errore DELETE session: $e');
+    } catch (_) {
       return false;
+    }
+  }
+
+  static Future<String?> uploadFile(String filePath, String fileName, dynamic branoId) async {
+    try {
+      final uri = Uri.parse('$baseUrl/files');
+      final request = http.MultipartRequest('POST', uri);
+      if (branoId != null) request.fields['brano_id'] = '$branoId';
+      request.files.add(
+        await http.MultipartFile.fromPath('file', filePath, filename: fileName),
+      );
+      final streamed = await request.send().timeout(_uploadTimeout);
+      final response = await http.Response.fromStream(streamed);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final body = jsonDecode(response.body);
+        return body['url'] as String?;
+      }
+      return null;
+    } catch (_) {
+      return null;
     }
   }
 }

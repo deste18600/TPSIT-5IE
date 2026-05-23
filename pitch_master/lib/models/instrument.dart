@@ -1,8 +1,15 @@
 class Instrument {
+  final int? id;
   final String name;
   final List<String> strings;
+  final bool isCustom;
 
-  const Instrument({required this.name, required this.strings});
+  const Instrument({
+    this.id,
+    required this.name,
+    required this.strings,
+    this.isCustom = false,
+  });
 }
 
 // Strumenti predefiniti
