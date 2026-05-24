@@ -34,7 +34,7 @@ const Map<String, double> noteFrequencies = {
   'La1': 55.00,
   'Re2': 73.42,
   'Sol2': 98.00,
-  'Mi2': 82.41,
+  'Mi2': 82.40,
   'La2': 110.00,
   'Re3': 146.83,
   'Sol3': 196.00,

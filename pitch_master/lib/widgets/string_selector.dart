@@ -98,7 +98,7 @@ class StringSelector extends StatelessWidget {
                     ],
                   ),
                   child: const Text(
-                    '🎸',
+                  '',
                     style: TextStyle(fontSize: 28),
                   ),
                 ),

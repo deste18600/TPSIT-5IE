@@ -36,13 +36,7 @@
       "nome_file": "chiesa",
       "percorso_file": "/data/user/0/com.example.pitch_master/app_flutter/spartiti/Canzoniere con accordi_260112_082241.pdf",
       "note": "Standard",
-      "id": "e9DXy0vrIaI"
-    },
-    {
-      "nome_file": "e",
-      "percorso_file": "/data/user/0/com.example.pitch_master/app_flutter/spartiti/593_Circ._incontro_sulla_questione_israelo-palestinese_25_maggio_2026.pdf",
-      "note": "dr",
-      "id": "qjm2WwJ-rj0"
+      "id": "CNA2cUWKBqk"
     }
   ],
   "$schema": "./node_modules/json-server/schema.json"
