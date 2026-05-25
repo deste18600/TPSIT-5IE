@@ -7,90 +7,69 @@
 
 ## Descrizione del progetto
 
-PitchMaster è un'applicazione mobile sviluppata in Flutter dedicata ai musicisti. L'architettura dell'app si divide in due funzionalità principali, accessibili tramite una barra di navigazione inferiore (Navbar):
-
-- **Pagina Accordatore:** Un accordatore cromatico in tempo reale che ascolta il suono prodotto dallo strumento tramite il microfono e mostra visivamente lo scostamento dalla nota target.
-- **Pagina Spartiti:** Un archivio offline-first per salvare, visualizzare e gestire i propri file PDF o immagini musicali, con sincronizzazione in background verso un server.
+PitchMaster è un'app mobile fatta in Flutter pensata per i musicisti. L'idea di base è semplice: avere in un'unica app sia un accordatore che funziona col microfono, sia un posto dove tenere tutti i propri spartiti. Si passa da una sezione all'altra con una barra di navigazione in basso.
 
 ---
 
-## Navigazione Principale (Bottom Navbar)
+## Navigazione principale (Bottom Navbar)
 
-La navigazione tra le due sezioni dell'app avviene tramite una barra inferiore. Questa gestisce lo stato principale dell'interfaccia:
+La barra in basso è il punto di accesso alle due schermate:
 
-- **Tasto Accordatore (Sinistra):** Mostra la schermata `TunerScreen` e inizializza i servizi audio.
-- **Tasto Spartiti (Destra):** Mostra la schermata `SpartitiScreen`, attivando la lettura dal database locale e la verifica della connessione col server.
+- **Tasto Accordatore (sinistra):** apre la `TunerScreen` e avvia i servizi audio.
+- **Tasto Spartiti (destra):** apre la `SpartitiScreen`, che legge dal database locale e controlla se il server è raggiungibile.
 
 ---
 
 ## 1. Pagina Accordatore (`tuner_screen.dart`)
 
-Questa schermata è il cuore interattivo dell'app. L'interfaccia è costruita per essere reattiva e chiara durante l'uso pratico dello strumento.
-
 ### Il pulsante del microfono
 
-L'attivazione del microfono è gestita da un `GestureDetector` che avvolge un `AnimatedContainer`.
+È un `AnimatedContainer` dentro un `GestureDetector`. Quando il microfono è spento è grigio scuro con l'icona del microfono, quando è attivo diventa rosso (`#E74C3C`) con l'icona di stop — così non ci si dimentica che sta ascoltando.
 
-- Quando l'ascolto è **spento**, il pulsante appare con i colori standard (oro e grigio scuro) e l'icona del microfono.
-- Quando l'ascolto è **attivo**, il contenitore si anima in rosso (`#E74C3C`) con l'icona di stop, fornendo un feedback visivo immediato.
+### Selettore delle corde (`string_selector.dart`)
 
-La pressione invoca i metodi di avvio/stop presenti nell'`AudioService`.
+Permette di scegliere quale corda si vuole accordare. È uno `StatelessWidget` perché non gestisce stato suo, riceve solo l'indice della corda attiva. Le corde vengono divise in due colonne affiancate (pari a sinistra, dispari a destra) per stare comode sullo schermo. Il pulsante selezionato cambia colore del bordo e ombra.
 
-### Selettore delle Corde (`string_selector.dart`)
+### Il quadrante (`frequency_gauge.dart`)
 
-Questo widget permette di selezionare quale corda accordare.
+Questa è la parte che mi ha dato più soddisfazione. La lancetta e il semicerchio sono disegnati da zero con `CustomPainter`, quindi tutto gira direttamente sul `Canvas` di Flutter senza widget intermedi. Riceve il valore di `centsOffset` (quanto sei distante dalla nota), lo mappa tra `[-100, +100]` e lo converte in angoli con `cos` e `sin`. Il colore cambia in tempo reale:
 
-- **Struttura:** Non avendo uno stato interno (`StatelessWidget`), riceve semplicemente l'indice della corda attiva e la lista delle note.
-- **Layout:** Utilizza una `Row` centrale che contiene due `Column` affiancate. La logica divide dinamicamente l'array delle corde: gli indici pari finiscono nella colonna di sinistra, quelli dispari nella colonna di destra, creando una disposizione ergonomica.
-- I pulsanti cambiano ombreggiatura (`BoxShadow`) e colore del bordo quando selezionati.
+-  **Verde:** accordato (entro ±5 cents)
+-  **Giallo:** quasi (entro ±20 cents)
+-  **Oro:** troppo distante
 
-### Il Quadrante dell'Accordatore (`frequency_gauge.dart`)
+### Come funziona il calcolo audio (`audio_service.dart`)
 
-La lancetta e il semicerchio graduato sono disegnati da zero utilizzando il sistema `CustomPainter` di Flutter, che permette prestazioni elevatissime agendo direttamente sul `Canvas`.
+La logica è divisa in due Stream per non bloccare l'interfaccia:
 
-- **Funzionamento:** Riceve il valore di `centsOffset` (lo scostamento in centesimi di semitono).
-- **Calcolo della Lancetta:** Mappa il valore `[-100, +100]` in angoli radianti `[π, 2π]`. Usa funzioni trigonometriche (`cos` e `sin`) per calcolare la punta dell'ago e la sua ombra sfocata per un effetto 3D.
-- **Colori dinamici:** Il colore dell'ago e del perno centrale cambia in tempo reale:
-  - 🟢 **Verde (`#2ECC71`):** Perfettamente accordato (entro ±5 cents).
-  - 🟡 **Giallo (`#F1C40F`):** Vicino (entro ±20 cents).
-  - 🟠 **Oro (`#D4AF37`):** Troppo distante.
-
-### I due Stream e il Calcolo della Frequenza (`audio_service.dart`)
-
-La logica audio è divisa in due flussi (Stream) per non bloccare l'interfaccia grafica:
-
-1. **Il primo Stream (Grezzo):** Usa la libreria `flutter_sound` per catturare i byte PCM16 dal microfono e li accumula in un buffer privato (`_audioController`).
-2. **Il calcolo (Autocorrelazione):** Raggiunti gli 8192 campioni, i byte vengono convertiti in decimali. L'algoritmo di autocorrelazione cerca pattern ripetitivi nell'onda sonora, confrontando il segnale con se stesso spostato nel tempo (lag) per trovare il periodo e, di conseguenza, la frequenza espressa in Hertz.
-3. **Il secondo Stream (Raffinato):** Una volta calcolata la frequenza in Hz, il numero pulito viene inserito nel `_frequencyController`, a cui l'interfaccia grafica si "abbona" per muovere la lancetta, mantenendo la UI fluida a 60 fps. Il calcolo in "cents" definisce infine di quanto la nota è calante (flat) o crescente (sharp).
+1. **Stream grezzo:** `flutter_sound` cattura i byte PCM16 dal microfono e li accumula in un buffer interno.
+2. **Calcolo:** Quando si raggiungono 8192 campioni scatta l'autocorrelazione — in pratica si confronta il segnale audio con una copia di sé stesso spostata nel tempo, così si trova il periodo dell'onda e quindi la frequenza in Hz.
+3. **Stream pulito:** La frequenza calcolata va nel `_frequencyController`, a cui la UI si abbona per muovere la lancetta. Così l'interfaccia rimane fluida a 60fps anche mentre il calcolo sta girando. Alla fine si converte tutto in cents per sapere se la nota è calante o crescente.
 
 ---
 
 ## 2. Pagina Spartiti (`spartiti_screen.dart`)
 
-L'archivio è costruito seguendo un'architettura **offline-first**: l'utente non deve mai aspettare i tempi di rete per visualizzare i propri file.
+L'idea era che l'app funzionasse anche senza connessione, quindi ho costruito tutto con una logica **offline-first**: si legge sempre prima dal database locale, e il server è un extra.
 
-### Widget utilizzati
+### Struttura dell'interfaccia
 
-La struttura principale è gestita da uno `Scaffold`.
+- La lista usa un `ListView.builder` dentro un `RefreshIndicator` (il gesto "tira giù per aggiornare").
+- Ogni spartito è una `Card` con un `ListTile`. L'icona cambia a seconda dello stato di sincronizzazione: nuvola verde se è già sul server, icona smartphone se è solo in locale.
+- Per aggiungere o modificare uno spartito si apre un `AlertDialog` con `StatefulBuilder`. I form usano `TextField` e `OutlinedButton.icon`, e per scegliere il file si usa `file_picker`.
 
-- La lista degli spartiti utilizza un `ListView.builder` avvolto in un `RefreshIndicator` per permettere l'aggiornamento manuale tirando verso il basso.
-- Ogni spartito è disegnato usando una `Card` contenente un `ListTile` con iconografia condizionale (es. nuvola con spunta verde se sincronizzato, icona smartphone se solo locale).
-- L'aggiunta e la modifica avvengono tramite modali (`AlertDialog` con `StatefulBuilder`) richiamati da un `FloatingActionButton`. I form usano widget nativi come `TextField` e `OutlinedButton.icon` per agganciare il file system (`file_picker`).
+### Database locale (`database_helper.dart`)
 
-### Database SQLite Locale (`database_helper.dart`)
+Uso `sqflite` con due tabelle:
 
-Il pacchetto `sqflite` gestisce i dati sul telefono attraverso due tabelle:
+- **`strumenti`:** Nome e corde dello strumento (es. `"Mi2,La2,Re3..."`). La colonna `attivo` tiene traccia di quale strumento è selezionato, e per cambiarlo basta una `UPDATE`.
+- **`spartiti`:** Percorso del file e metadati. I flag più importanti sono:
+  - `synced = 0` → creato offline, ancora da mandare al server
+  - `sync_pending = 1` → evita di caricarlo due volte se la connessione cade a metà
+  - `remote_id` → l'ID che assegna il server una volta salvato con successo
 
-- **`strumenti`:** Salva il nome e le corde di ogni strumento (es. `"Mi2,La2,Re3..."`). La colonna `attivo` indica quale strumento è in uso, permettendo di cambiarlo con una singola istruzione `UPDATE`.
-- **`spartiti`:** Salva il riferimento al file e i metadati. Include flag vitali per la sincronizzazione:
-  - `synced = 0`: Elemento creato offline, da inviare.
-  - `sync_pending = 1`: Evita che lo stesso file venga caricato due volte in caso di connessione instabile.
-  - `remote_id`: L'ID univoco assegnato dal server una volta salvato con successo.
+### Sincronizzazione con il server (`api_service.dart`)
 
-### Sincronizzazione API (`api_service.dart`)
+Il backend gira su `json-server`. L'`ApiService` fa chiamate REST (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`) con il pacchetto `http`, convertendo tutto da e verso JSON.
 
-Il ponte tra l'app e il server remoto (basato su `json-server`).
-
-- Usa il pacchetto `http` per inviare richieste REST (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`).
-- Tutte le chiamate traducono i dati Dart in JSON (`jsonEncode`) e viceversa (`jsonDecode`).
-- Implementa un **timeout di 5 secondi**: se il server non risponde in tempo, l'`ApiService` restituisce `null`. La logica dell'app "cattura" questo risultato, mantiene `_eOnline = false`, e continua a operare perfettamente leggendo i file PDF copiati nella cartella locale dei documenti, ritentando la sincronizzazione silente in background in un secondo momento.
+Ho messo un **timeout di 5 secondi**: se il server non risponde, il servizio restituisce `null`, l'app imposta `_eOnline = false` e continua a lavorare normalmente coi file locali. La sincronizzazione viene ritentata in background quando torna la connessione.
