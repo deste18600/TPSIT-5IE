@@ -1,8 +1,17 @@
+// ============================================================
+// string_selector.dart
+// Pulsanti circolari per scegliere la corda da accordare.
+// Disposizione: due colonne affiancate, indici pari a sinistra
+// e indici dispari a destra.
+// ============================================================
+
 import 'package:flutter/material.dart';
 
+
 class StringSelector extends StatelessWidget {
-  final List<String> strings;
-  final int selectedIndex;
+
+  final List<String>  strings;       // es. ['Mi2', 'La2', 'Re3', ...]
+  final int           selectedIndex;
   final Function(int) onSelected;
 
   const StringSelector({
@@ -12,141 +21,73 @@ class StringSelector extends StatelessWidget {
     required this.onSelected,
   });
 
+
   @override
   Widget build(BuildContext context) {
-    final leftStrings = <int>[];
-    final rightStrings = <int>[];
+
+    // Indici pari → colonna sinistra, dispari → colonna destra
+    final sinistra = <int>[];
+    final destra   = <int>[];
 
     for (int i = 0; i < strings.length; i++) {
-      if (i % 2 == 0) {
-        leftStrings.add(i);
-      } else {
-        rightStrings.add(i);
-      }
+      if (i % 2 == 0) sinistra.add(i);
+      else             destra.add(i);
     }
 
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
+
+        // Colonna sinistra
         Column(
-          children: leftStrings.map((i) => _buildButton(i)).toList(),
+          children: sinistra.map((i) => _pulsante(i)).toList(),
         ),
-        // Tastiera chitarra mockup nera ed oro
-        Container(
-          width: 96,
-          height: 180,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xFF222222), Color(0xFF111111)],
-            ),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: const Color(0xFFD4AF37),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFFD4AF37).withOpacity(0.1),
-                blurRadius: 10,
-                spreadRadius: 2,
-              )
-            ],
-          ),
-          child: Stack(
-            children: [
-              // Frets (tasti chitarra)
-              Positioned.fill(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: List.generate(
-                    5,
-                    (index) => Container(
-                      height: 1,
-                      color: const Color(0xFFD4AF37).withOpacity(0.2),
-                    ),
-                  ),
-                ),
-              ),
-              // Strings (corde dorate)
-              Positioned.fill(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: List.generate(
-                    4,
-                    (index) => Container(
-                      width: 1.2,
-                      color: const Color(0xFFD4AF37).withOpacity(0.5),
-                    ),
-                  ),
-                ),
-              ),
-              // Cerchio centrale con emoji chitarra
-              Center(
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF0A0A0A),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black54,
-                        blurRadius: 4,
-                        spreadRadius: 1,
-                      )
-                    ],
-                  ),
-                  child: const Text(
-                  '',
-                    style: TextStyle(fontSize: 28),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+
+        const SizedBox(width: 20), // spazio tra le due colonne
+
+        // Colonna destra
         Column(
-          children: rightStrings.map((i) => _buildButton(i)).toList(),
+          children: destra.map((i) => _pulsante(i)).toList(),
         ),
       ],
     );
   }
 
-  Widget _buildButton(int index) {
-    final isSelected = index == selectedIndex;
+
+  Widget _pulsante(int index) {
+    final bool sel = index == selectedIndex;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: GestureDetector(
         onTap: () => onSelected(index),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          width: 58,
-          height: 58,
+          width: 58, height: 58,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: isSelected ? const Color(0xFFD4AF37) : const Color(0xFF161616),
+            color: sel ? const Color(0xFFD4AF37) : const Color(0xFF161616),
             border: Border.all(
-              color: isSelected ? const Color(0xFFD4AF37) : const Color(0xFFD4AF37).withOpacity(0.3),
+              color: sel
+                  ? const Color(0xFFD4AF37)
+                  : const Color(0xFFD4AF37).withOpacity(0.3),
               width: 1.5,
             ),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: const Color(0xFFD4AF37).withOpacity(0.4),
-                      blurRadius: 8,
-                      spreadRadius: 1,
-                    )
-                  ]
+            boxShadow: sel
+                ? [BoxShadow(
+                    color:        const Color(0xFFD4AF37).withOpacity(0.4),
+                    blurRadius:   8,
+                    spreadRadius: 1,
+                  )]
                 : null,
           ),
           child: Center(
             child: Text(
               strings[index],
               style: TextStyle(
-                color: isSelected ? const Color(0xFF0A0A0A) : const Color(0xFFC5A880),
+                color:      sel ? const Color(0xFF0A0A0A) : const Color(0xFFC5A880),
                 fontWeight: FontWeight.bold,
-                fontSize: 13,
+                fontSize:   13,
               ),
             ),
           ),

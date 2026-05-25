@@ -1,43 +1,24 @@
 {
-  "brani": [
+  "strumenti": [
     {
       "id": "1",
-      "titolo": "Wish You Were Here",
-      "autore": "Pink Floyd"
+      "nome": "Chitarra",
+      "corde": "Mi2,La2,Re3,Sol3,Si3,Mi4",
+      "attivo": 1
     },
     {
       "id": "2",
-      "titolo": "Hotel California",
-      "autore": "Eagles"
+      "nome": "Basso",
+      "corde": "Mi1,La1,Re2,Sol2",
+      "attivo": 0
     },
     {
-      "titolo": "etrusco gay",
-      "autore": "etrusco",
-      "id": "i3ut-K6Ilnw"
-    },
-    {
-      "titolo": "124",
-      "autore": "133",
-      "id": "C39_xR9MXlY"
-    },
-    {
-      "titolo": "124",
-      "autore": "133",
-      "id": "ySTDyVTz19g"
-    },
-    {
-      "titolo": "124",
-      "autore": "133",
-      "id": "US-1jnMuFGM"
+      "id": "3",
+      "nome": "Ukulele",
+      "corde": "Sol4,Do4,Mi4,La4",
+      "attivo": 0
     }
   ],
-  "spartiti": [
-    {
-      "nome_file": "chiesa",
-      "percorso_file": "/data/user/0/com.example.pitch_master/app_flutter/spartiti/Canzoniere con accordi_260112_082241.pdf",
-      "note": "Standard",
-      "id": "CNA2cUWKBqk"
-    }
-  ],
+  "spartiti": [],
   "$schema": "./node_modules/json-server/schema.json"
 }
